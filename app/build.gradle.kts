@@ -27,6 +27,12 @@ android {
 
         buildConfigField("String", "SUPABASE_URL", "\"${localProperties.getProperty("SUPABASE_URL", "")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${localProperties.getProperty("SUPABASE_ANON_KEY", "")}\"")
+
+        // Firebase Cloud Messaging (push). Public client config from the Firebase console, kept in local.properties
+        // like the Supabase keys. Push stays off until all four are set; the app works without them.
+        for (key in listOf("FIREBASE_PROJECT_ID", "FIREBASE_APP_ID", "FIREBASE_API_KEY", "FIREBASE_SENDER_ID")) {
+            buildConfigField("String", key, "\"${localProperties.getProperty(key, "")}\"")
+        }
     }
 
     buildTypes {
@@ -77,6 +83,8 @@ dependencies {
     implementation(libs.androidx.exifinterface)
     implementation(libs.maplibre.android)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

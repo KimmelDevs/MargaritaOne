@@ -73,3 +73,36 @@ Enforced in the database with RLS policies plus column-level grants (so nobody c
 - Deleting a user from the dashboard (Authentication → Users) doesn't remove their photos; the in-app "Delete my account" does.
 - Google Play also asks for a **web** link where people can request account deletion (e.g. an LGU page or email address).
 - The privacy notice (`PrivacyNoticeScreen.kt`) has a placeholder for the DPO contact details.
+
+## Push notifications (Firebase Cloud Messaging) — free
+
+Who gets what: residents when staff/admins update their report, staff/admins when a new report comes in,
+everyone when a post is published (emergency posts use a high-priority "Emergency alerts" channel).
+Scheduled posts are not announced when they go live.
+
+Firebase Cloud Messaging is free with no message limit; the Edge Function stays well inside Supabase's free tier.
+
+1. **Firebase project.** At https://console.firebase.google.com create a project, then *Add app → Android* with
+   package name `com.kimmeldevs.margaritaone`. You can skip downloading `google-services.json`.
+2. **App config → `local.properties`** (Project settings → General → Your apps). These are public client values:
+   ```
+   FIREBASE_PROJECT_ID=your-project-id
+   FIREBASE_APP_ID=1:1234567890:android:abc123
+   FIREBASE_API_KEY=AIza...
+   FIREBASE_SENDER_ID=1234567890
+   ```
+   (Sender ID = "Project number" under Cloud Messaging.) Rebuild the app.
+3. **Service account → Supabase secret.** Project settings → Service accounts → *Generate new private key*.
+   This JSON is a real secret: never put it in the app or commit it. In Supabase: Edge Functions → Secrets, add
+   - `FIREBASE_SERVICE_ACCOUNT` = the entire JSON file contents
+   - `PUSH_WEBHOOK_SECRET` = a long random string you make up
+4. **Deploy the function** `supabase/functions/send-push/index.ts` with JWT verification **off**
+   (`supabase functions deploy send-push --no-verify-jwt`, or Dashboard → Edge Functions → Deploy new function →
+   paste the file, name it `send-push`, then turn off "Verify JWT" in its settings).
+5. **Run `migrations/0009_push_notifications.sql`**, then store the two Vault values in the SQL Editor:
+   ```sql
+   select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/send-push', 'push_function_url');
+   select vault.create_secret('<same string as PUSH_WEBHOOK_SECRET>', 'push_webhook_secret');
+   ```
+6. **Test:** sign in on a phone (allow notifications), then from another account post to the bulletin or update one
+   of that user's reports. Edge Functions → send-push → Logs shows each call (`{"event": ..., "sent": n}`).

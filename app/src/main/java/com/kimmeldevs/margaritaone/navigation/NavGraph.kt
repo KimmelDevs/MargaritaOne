@@ -16,7 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import com.kimmeldevs.margaritaone.push.NotificationPermissionPrompt
+import com.kimmeldevs.margaritaone.push.PushTarget
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -153,6 +156,17 @@ private fun SignedInNavGraph(
     val isOnline by remember { context.isOnlineFlow() }.collectAsStateWithLifecycle(initialValue = true)
     val emergencyViewModel: EmergencyViewModel = viewModel(factory = EmergencyViewModel.Factory)
     val emergency by emergencyViewModel.emergency.collectAsStateWithLifecycle()
+
+    NotificationPermissionPrompt()
+    // A tapped notification opens its report or the bulletin.
+    val pushTarget by PushTarget.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(pushTarget) {
+        when (val target = pushTarget ?: return@LaunchedEffect) {
+            is PushTarget.Report -> navController.navigate(Screen.ReportDetail.createRoute(target.reportId))
+            PushTarget.Bulletin -> navController.navigateToTab(Screen.Bulletin.route)
+        }
+        PushTarget.consume()
+    }
 
     Scaffold(
         bottomBar = {

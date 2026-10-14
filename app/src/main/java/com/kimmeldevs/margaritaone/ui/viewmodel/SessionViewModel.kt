@@ -6,6 +6,8 @@ import com.kimmeldevs.margaritaone.data.model.Profile
 import com.kimmeldevs.margaritaone.data.remote.SupabaseProvider
 import com.kimmeldevs.margaritaone.data.repository.AuthRepository
 import com.kimmeldevs.margaritaone.data.repository.ProfileRepository
+import com.kimmeldevs.margaritaone.data.repository.PushRepository
+import com.kimmeldevs.margaritaone.push.Push
 import com.kimmeldevs.margaritaone.util.LocalStore
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +30,8 @@ sealed interface SessionState {
 class SessionViewModel(
     private val authRepository: AuthRepository,
     private val profileRepository: ProfileRepository,
-    private val localStore: LocalStore
+    private val localStore: LocalStore,
+    private val pushRepository: PushRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<SessionState>(SessionState.Loading)
@@ -81,6 +84,7 @@ class SessionViewModel(
             _state.value = when (val result = loadState { profileRepository.getProfile(userId) }) {
                 is UiState.Success -> result.data?.let {
                     localStore.cachedProfile = it
+                    registerForPush()
                     SessionState.SignedIn(it)
                 } ?: SessionState.Error("Your profile could not be found. Please contact the LGU.")
                 // No signal: keep the profile already on screen, or the one saved on the phone.
@@ -96,8 +100,15 @@ class SessionViewModel(
         localStore.cachedProfile?.let { SessionState.SignedIn(it) }
             ?: SessionState.Error("Can't reach the server. Check your internet connection.")
 
+    /** Links this phone to the user for notifications. Best-effort: the app works without push. */
+    private fun registerForPush() {
+        viewModelScope.launch { runCatching { Push.register(pushRepository) } }
+    }
+
     fun signOut() {
         viewModelScope.launch {
+            // While still signed in, so the server lets us remove this phone's token.
+            Push.unregister(pushRepository)
             runAction { authRepository.signOut() }
             localStore.clearAccountData()
             _state.value = SessionState.SignedOut
@@ -105,6 +116,6 @@ class SessionViewModel(
     }
 
     companion object {
-        val Factory = appViewModelFactory { SessionViewModel(it.authRepository, it.profileRepository, it.localStore) }
+        val Factory = appViewModelFactory { SessionViewModel(it.authRepository, it.profileRepository, it.localStore, it.pushRepository) }
     }
 }

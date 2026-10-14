@@ -1,5 +1,6 @@
 package com.kimmeldevs.margaritaone
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import com.kimmeldevs.margaritaone.i18n.LocalLanguage
 import com.kimmeldevs.margaritaone.i18n.LocalSetLanguage
 import com.kimmeldevs.margaritaone.navigation.MargaritaOneRoot
+import com.kimmeldevs.margaritaone.push.PushTarget
 import com.kimmeldevs.margaritaone.ui.theme.LocalSetThemeMode
 import com.kimmeldevs.margaritaone.ui.theme.LocalThemeMode
 import com.kimmeldevs.margaritaone.ui.theme.MargaritaOneTheme
@@ -28,6 +30,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Opened from a notification: remember where to go once signed in.
+        PushTarget.handle(intent)
         val localStore = (application as MargaritaOneApp).container.localStore
         setContent {
             var language by remember { mutableStateOf(localStore.language) }
@@ -68,5 +72,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        PushTarget.handle(intent)
     }
 }

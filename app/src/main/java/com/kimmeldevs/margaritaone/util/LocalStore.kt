@@ -74,6 +74,11 @@ class LocalStore(context: Context) {
         offlineDir.deleteRecursively()
     }
 
+    /** The notification permission is asked once after the first sign-in; after that it's in system settings. */
+    var askedNotificationPermission: Boolean
+        get() = prefs.getBoolean("asked_notifications", false)
+        set(value) = prefs.edit { putBoolean("asked_notifications", value) }
+
     fun dismissEmergency(postId: String) = prefs.edit { putString("dismissed_emergency", postId) }
 
     fun isEmergencyDismissed(postId: String): Boolean = prefs.getString("dismissed_emergency", null) == postId

@@ -52,16 +52,16 @@ Work one step at a time and make sure the project builds (`./gradlew assembleDeb
 3. Real reports with photo + GPS
 4. Bulletin board posting
 5. Staff tools + admin user management
-6. Push notifications (FCM triggered from a Supabase Edge Function) + polish — **push postponed by the user (budget); do not implement until asked**
+6. Push notifications (FCM triggered from a Supabase Edge Function) + polish
 7. Review RLS policies + privacy notice
 
 ## Current state
 
-Steps 1–5 and 7 are implemented in code; step 6 push notifications are skipped. Builds with `./gradlew assembleDebug`
+Steps 1–7 are implemented in code (push needs the Firebase setup in `supabase/README.md`). Builds with `./gradlew assembleDebug`
 (needs `JAVA_HOME` = Android Studio's `jbr`; compileSdk 37, Kotlin 2.4.21, supabase-kt 3.8.0). Not yet tested against a
 live Supabase project.
 
-- SQL: `supabase/migrations/0001_init.sql`, `0002_profile_email_and_hardening.sql`, `0003_cancel_and_reference_numbers.sql`, `0004_emergency_contacts.sql`, `0005_post_images_and_reactions.sql`, `0006_hotline_categories.sql`, `0007_comments_events_barangays_audit.sql`, `0008_accountability.sql`; checks in `supabase/tests/rls_checks.sql`;
+- SQL: `supabase/migrations/0001_init.sql`, `0002_profile_email_and_hardening.sql`, `0003_cancel_and_reference_numbers.sql`, `0004_emergency_contacts.sql`, `0005_post_images_and_reactions.sql`, `0006_hotline_categories.sql`, `0007_comments_events_barangays_audit.sql`, `0008_accountability.sql`, `0009_push_notifications.sql`; checks in `supabase/tests/rls_checks.sql`;
   setup + security model in `supabase/README.md`. Add new SQL as new numbered migration files, never edit applied ones.
 - Status changes go through `report_updates` (trigger copies status onto `reports`). Roles change only via the admin-only
   `set_user_role()` RPC. Reports are rate-limited to 10/hour per user.
@@ -112,3 +112,10 @@ live Supabase project.
   show an Admin shield / Staff ID pill. `report_views` records staff/admins opening a report via the
   `mark_report_seen()` RPC (once per visit in `ReportDetailViewModel`); readable by staff/admins only: "Seen by"
   section on report detail and a "Seen" eye on the dashboard. Residents never see it.
+- Push (0009 + `supabase/functions/send-push`): `device_tokens` written only via `register_device_token` /
+  `unregister_device_token` RPCs; triggers call the Edge Function with pg_net (URL + shared secret from Vault; no-op
+  until set, never blocks inserts). The function holds the Firebase service account (Edge secret only) and sends
+  data-only FCM messages: report updates -> reporter, new reports -> staff/admins, posts -> topic `bulletin`.
+  App: `push/` (`Push.init` from `MargaritaOneApp`, FirebaseApp built from `FIREBASE_*` in local.properties, no
+  google-services plugin; `PushService` shows notifications; `PushTarget` opens the report/bulletin on tap).
+  Register on sign-in and unregister before sign-out in `SessionViewModel`. Notification permission asked once.
