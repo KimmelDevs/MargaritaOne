@@ -22,6 +22,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -49,7 +50,9 @@ fun SignUpScreen(
     onSignUp: (fullName: String, email: String, password: String, confirmPassword: String, acceptedPrivacy: Boolean) -> Unit,
     onOpenPrivacyNotice: () -> Unit,
     onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Back to the login screen, e.g. "Sign in instead" when the email already has an account. */
+    onGoToSignIn: () -> Unit = onBackClick
 ) {
     var fullName by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
@@ -136,6 +139,11 @@ fun SignUpScreen(
             }
 
             FormMessages(state)
+            if (state.accountExists) {
+                OutlinedButton(onClick = onGoToSignIn, modifier = Modifier.fillMaxWidth()) {
+                    Text(t("Sign in instead"))
+                }
+            }
 
             Button(
                 onClick = { onSignUp(fullName, email, password, confirmPassword, acceptedPrivacy) },

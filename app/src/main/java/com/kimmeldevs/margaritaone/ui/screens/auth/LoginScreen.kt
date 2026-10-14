@@ -24,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -53,6 +54,10 @@ fun LoginScreen(
     modifier: Modifier = Modifier
 ) {
     var email by rememberSaveable { mutableStateOf("") }
+    // Coming back from sign-up: fill in the email that was just used.
+    LaunchedEffect(state.prefillEmail) {
+        state.prefillEmail?.let { email = it }
+    }
     var password by rememberSaveable { mutableStateOf("") }
     var showPassword by rememberSaveable { mutableStateOf(false) }
 

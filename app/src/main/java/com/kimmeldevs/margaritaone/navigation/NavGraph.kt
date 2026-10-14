@@ -106,6 +106,7 @@ private fun SignedOutNavGraph() {
                 onSignIn = authViewModel::signIn,
                 onGoToSignUp = {
                     authViewModel.clearMessages()
+                    authViewModel.consumeSignUpResult()
                     navController.navigate(Screen.SignUp.route)
                 },
                 onForgotPassword = {
@@ -122,13 +123,23 @@ private fun SignedOutNavGraph() {
             HotlinesScreen(canEdit = false, onBackClick = { navController.popBackStack() })
         }
         composable(Screen.SignUp.route) {
+            // Signed up, but the email needs confirming: back to login with the email filled in and the message shown.
+            LaunchedEffect(authState.signUpComplete) {
+                if (authState.signUpComplete) navController.popBackStack(Screen.Login.route, inclusive = false)
+            }
             SignUpScreen(
                 state = authState,
                 onSignUp = authViewModel::signUp,
                 onOpenPrivacyNotice = { navController.navigate(Screen.PrivacyNotice.route) },
                 onBackClick = {
                     authViewModel.clearMessages()
+                    authViewModel.consumeSignUpResult()
                     navController.popBackStack()
+                },
+                onGoToSignIn = {
+                    // Keep the email to fill in; drop the "already exists" error.
+                    authViewModel.clearMessages()
+                    navController.popBackStack(Screen.Login.route, inclusive = false)
                 }
             )
         }

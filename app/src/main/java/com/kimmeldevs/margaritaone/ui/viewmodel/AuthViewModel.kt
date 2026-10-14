@@ -14,7 +14,13 @@ data class AuthFormState(
     val isLoading: Boolean = false,
     val error: String? = null,
     /** Shown after sign-up when Supabase requires email confirmation. */
-    val info: String? = null
+    val info: String? = null,
+    /** Email to fill in on the login screen (after signing up, or when the account already exists). */
+    val prefillEmail: String? = null,
+    /** Sign-up worked but the email must be confirmed first: the sign-up screen goes back to login. */
+    val signUpComplete: Boolean = false,
+    /** Sign-up was refused because the email is already registered: offer "Sign in instead". */
+    val accountExists: Boolean = false
 )
 
 /** Login and sign-up forms. On success the session flow in [SessionViewModel] takes over navigation. */
@@ -23,7 +29,10 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
     private val _state = MutableStateFlow(AuthFormState())
     val state: StateFlow<AuthFormState> = _state.asStateFlow()
 
-    fun clearMessages() = _state.update { it.copy(error = null, info = null) }
+    fun clearMessages() = _state.update { it.copy(error = null, info = null, accountExists = false) }
+
+    /** The login screen has taken the email and the sign-up screen has gone back. */
+    fun consumeSignUpResult() = _state.update { it.copy(prefillEmail = null, signUpComplete = false, accountExists = false) }
 
     fun signIn(email: String, password: String) {
         val trimmedEmail = email.trim()
@@ -41,17 +50,35 @@ class AuthViewModel(private val authRepository: AuthRepository) : ViewModel() {
             password != confirmPassword -> return showError("Passwords don't match.")
             !acceptedPrivacy -> return showError("Please read and accept the privacy notice.")
         }
-        submit {
-            val needsConfirmation = authRepository.signUp(trimmedEmail, password, fullName.trim())
-            if (needsConfirmation) {
-                _state.update {
-                    it.copy(info = "Account created. Check $trimmedEmail for a confirmation link, then sign in.")
+        if (_state.value.isLoading) return
+        _state.update { it.copy(isLoading = true, error = null, info = null, accountExists = false) }
+        viewModelScope.launch {
+            var needsConfirmation = false
+            val error = runAction { needsConfirmation = authRepository.signUp(trimmedEmail, password, fullName.trim()) }
+            _state.update {
+                when {
+                    // Pressing Sign up again after it already worked lands here too.
+                    error != null && error.contains("already registered", ignoreCase = true) -> it.copy(
+                        isLoading = false,
+                        error = "An account with this email already exists. Sign in instead.",
+                        accountExists = true,
+                        prefillEmail = trimmedEmail
+                    )
+                    error != null -> it.copy(isLoading = false, error = error)
+                    // Without email confirmation the user is signed in now and the session takes over.
+                    needsConfirmation -> it.copy(
+                        isLoading = false,
+                        info = "Account created. Check your email for a confirmation link, then sign in.",
+                        prefillEmail = trimmedEmail,
+                        signUpComplete = true
+                    )
+                    else -> it.copy(isLoading = false)
                 }
             }
         }
     }
 
-    private fun showError(message: String) = _state.update { it.copy(error = message, info = null) }
+    private fun showError(message: String) = _state.update { it.copy(error = message, info = null, accountExists = false) }
 
     private fun submit(block: suspend () -> Unit) {
         if (_state.value.isLoading) return
