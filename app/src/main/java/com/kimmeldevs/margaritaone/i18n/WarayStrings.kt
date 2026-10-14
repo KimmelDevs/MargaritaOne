@@ -107,6 +107,13 @@ val WarayStrings: Map<String, String> = mapOf(
     "Citizen" to "Lumulupyo",
     "Staff" to "Empleyado",
     "Admin" to "Admin",
+    "Posted by %s" to "Ginpost ni %s",
+    "Edited by %s" to "Gin-edit ni %s",
+    "by %s" to "ni %s",
+    "Seen by" to "Nakit-an ni",
+    "Seen" to "Nakit-an na",
+    "No one has opened this report yet" to "Waray pa nagbukas hini nga report",
+    "First seen %s" to "Siyahan nga nakit-an %s",
 
     // Create report
     "Report a problem" to "Ireport an problema",

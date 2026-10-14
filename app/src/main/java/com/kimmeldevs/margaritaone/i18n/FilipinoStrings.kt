@@ -104,6 +104,13 @@ val FilipinoStrings: Map<String, String> = mapOf(
     "Citizen" to "Mamamayan",
     "Staff" to "Kawani",
     "Admin" to "Admin",
+    "Posted by %s" to "Ipinost ni %s",
+    "Edited by %s" to "In-edit ni %s",
+    "by %s" to "ni %s",
+    "Seen by" to "Nakita ni",
+    "Seen" to "Nakita na",
+    "No one has opened this report yet" to "Wala pang nagbukas ng ulat na ito",
+    "First seen %s" to "Unang nakita %s",
 
     // Create report
     "Report a problem" to "Mag-ulat ng problema",

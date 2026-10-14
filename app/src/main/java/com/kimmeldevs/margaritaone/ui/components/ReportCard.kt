@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,7 +38,9 @@ fun ReportCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     thumbnailUrl: String? = null,
-    isUpdated: Boolean = false
+    isUpdated: Boolean = false,
+    /** A staff member or admin has opened it (only set on the staff dashboard). */
+    isSeen: Boolean = false
 ) {
     Card(
         modifier = modifier
@@ -101,6 +104,17 @@ fun ReportCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                if (isSeen) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(
+                            Icons.Filled.Visibility,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(t("Seen"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                    }
+                }
                 if (isUpdated) {
                     Text(
                         t("Updated"),

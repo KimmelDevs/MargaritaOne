@@ -10,7 +10,7 @@ MyGandara gets its own project. Barangays and hotlines live in that shared datab
 
 - Kotlin + Jetpack Compose (Material 3), Navigation Compose
 - Supabase via `supabase-kt`: Auth, Postgrest, Storage, Realtime
-- Ktor client engine for Android
+- Ktor OkHttp engine (not the "android" engine: it closes connections on the main thread when a request is cancelled, which crashes with NetworkOnMainThreadException)
 - Package: `com.kimmeldevs.margaritaone`, minSdk 24, targetSdk 36, AGP 9.2.1, Kotlin 2.2.10
 - Dependencies go in `gradle/libs.versions.toml`, not as inline strings in `app/build.gradle.kts`
 
@@ -61,7 +61,7 @@ Steps 1–5 and 7 are implemented in code; step 6 push notifications are skipped
 (needs `JAVA_HOME` = Android Studio's `jbr`; compileSdk 37, Kotlin 2.4.21, supabase-kt 3.8.0). Not yet tested against a
 live Supabase project.
 
-- SQL: `supabase/migrations/0001_init.sql`, `0002_profile_email_and_hardening.sql`, `0003_cancel_and_reference_numbers.sql`, `0004_emergency_contacts.sql`, `0005_post_images_and_reactions.sql`, `0006_hotline_categories.sql`, `0007_comments_events_barangays_audit.sql`; checks in `supabase/tests/rls_checks.sql`;
+- SQL: `supabase/migrations/0001_init.sql`, `0002_profile_email_and_hardening.sql`, `0003_cancel_and_reference_numbers.sql`, `0004_emergency_contacts.sql`, `0005_post_images_and_reactions.sql`, `0006_hotline_categories.sql`, `0007_comments_events_barangays_audit.sql`, `0008_accountability.sql`; checks in `supabase/tests/rls_checks.sql`;
   setup + security model in `supabase/README.md`. Add new SQL as new numbered migration files, never edit applied ones.
 - Status changes go through `report_updates` (trigger copies status onto `reports`). Roles change only via the admin-only
   `set_user_role()` RPC. Reports are rate-limited to 10/hour per user.
@@ -107,3 +107,8 @@ live Supabase project.
   report, emergency banner, barangays (in `DirectoryRepository`), and the profile (`SessionViewModel` opens the app
   with it when offline, including Supabase's `RefreshFailure` for an expired token). `Loadable` waits on
   `SupabaseProvider.awaitSessionReady()` so it never queries as signed-out. `clearAccountData()` on sign-out.
+- Accountability (0008): posts carry `author_name/author_role` + `edited_by_name/edited_at`, timeline entries and
+  comments carry the author name/role (all filled by triggers; clients can't write them). `RoleBadge`/`AuthorLine`
+  show an Admin shield / Staff ID pill. `report_views` records staff/admins opening a report via the
+  `mark_report_seen()` RPC (once per visit in `ReportDetailViewModel`); readable by staff/admins only: "Seen by"
+  section on report detail and a "Seen" eye on the dashboard. Residents never see it.

@@ -25,7 +25,13 @@ data class PostDto(
     @SerialName("published_at") val publishedAt: String,
     @SerialName("event_start") val eventStart: String? = null,
     @SerialName("event_end") val eventEnd: String? = null,
-    @SerialName("event_location") val eventLocation: String? = null
+    @SerialName("event_location") val eventLocation: String? = null,
+    /** Who posted it and their role, copied by a database trigger (accountability). */
+    @SerialName("author_name") val authorName: String? = null,
+    @SerialName("author_role") val authorRole: UserRole? = null,
+    /** Last admin who changed the post, if it was edited after posting. */
+    @SerialName("edited_by_name") val editedByName: String? = null,
+    @SerialName("edited_at") val editedAt: String? = null
 ) {
     /** Photos to show in the grid. Older posts kept a single image in attachment_path. */
     val allImagePaths: List<String>
@@ -61,6 +67,7 @@ data class PostComment(
     @SerialName("post_id") val postId: String,
     @SerialName("user_id") val userId: String,
     @SerialName("author_name") val authorName: String? = null,
+    @SerialName("author_role") val authorRole: UserRole? = null,
     val body: String,
     @SerialName("created_at") val createdAt: String
 )

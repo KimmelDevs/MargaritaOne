@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
@@ -71,6 +72,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.kimmeldevs.margaritaone.data.model.ReportStatus
 import com.kimmeldevs.margaritaone.data.model.ReportUpdateDto
+import com.kimmeldevs.margaritaone.data.model.ReportView
+import com.kimmeldevs.margaritaone.ui.components.AuthorLine
 import com.kimmeldevs.margaritaone.ui.components.ConfirmDialog
 import com.kimmeldevs.margaritaone.ui.components.RefreshOnResume
 import com.kimmeldevs.margaritaone.ui.components.StatusBadge
@@ -288,6 +291,8 @@ private fun ReportDetailContent(
                 TimelineRow(update = update, isLatest = index == detail.timeline.lastIndex)
             }
         }
+
+        if (isStaff) SeenBySection(views = detail.seenBy)
     }
 
     if (showPhoto && detail.photoUrl != null) {
@@ -435,6 +440,47 @@ private fun DetailRow(label: String, value: String, modifier: Modifier = Modifie
     }
 }
 
+/** Staff and admins who opened this report, and when. Shown to staff/admins only. */
+@Composable
+private fun SeenBySection(views: List<ReportView>) {
+    Text(
+        text = t("Seen by"),
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+    )
+    if (views.isEmpty()) {
+        Text(
+            t("No one has opened this report yet"),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.outline
+        )
+        return
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        views.forEach { view ->
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(
+                    Icons.Filled.Visibility,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .size(18.dp)
+                )
+                Column {
+                    AuthorLine(text = view.viewerName, role = view.viewerRole, emphasized = true)
+                    Text(
+                        t("First seen %s", Dates.dateTime(view.firstSeenAt)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun TimelineRow(update: ReportUpdateDto, isLatest: Boolean) {
     Row(
@@ -455,6 +501,10 @@ private fun TimelineRow(update: ReportUpdateDto, isLatest: Boolean) {
                 fontWeight = FontWeight.Medium
             )
             update.note?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
+            // Who did it, for LGU actions (the first entry is the resident's own submission).
+            if (update.authorRole?.isStaff == true && update.authorName != null) {
+                AuthorLine(text = t("by %s", update.authorName), role = update.authorRole)
+            }
             Text(
                 text = Dates.dateTime(update.createdAt),
                 style = MaterialTheme.typography.bodySmall,

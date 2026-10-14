@@ -118,7 +118,8 @@ fun ReportListContent(
                         report = report,
                         onClick = { onReportClick(report.id) },
                         thumbnailUrl = report.photoPath?.let { data.thumbnails[it] },
-                        isUpdated = viewModel.isUpdated(report)
+                        isUpdated = viewModel.isUpdated(report),
+                        isSeen = report.id in data.seenIds
                     )
                 }
             }

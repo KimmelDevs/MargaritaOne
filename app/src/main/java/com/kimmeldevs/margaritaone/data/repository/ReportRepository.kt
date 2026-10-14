@@ -5,15 +5,19 @@ import com.kimmeldevs.margaritaone.data.model.NewReportUpdate
 import com.kimmeldevs.margaritaone.data.model.ReportDto
 import com.kimmeldevs.margaritaone.data.model.ReportStatus
 import com.kimmeldevs.margaritaone.data.model.ReportUpdateDto
+import com.kimmeldevs.margaritaone.data.model.ReportView
 import com.kimmeldevs.margaritaone.data.remote.Buckets
 import com.kimmeldevs.margaritaone.data.remote.Tables
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.storage.storage
 import io.ktor.http.ContentType
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.util.UUID
@@ -92,6 +96,29 @@ class ReportRepository(private val client: () -> SupabaseClient) {
     }
 
     /** Signed URLs for several photos in one request; map of object path to URL. */
+    /** Staff/admins only (the database ignores it for residents): records that they opened the report. */
+    suspend fun markSeen(reportId: String) {
+        client().postgrest.rpc("mark_report_seen", buildJsonObject { put("target_report", reportId) })
+    }
+
+    /** Staff and admins who opened the report, earliest first. Readable by staff/admins only (RLS). */
+    suspend fun getViews(reportId: String): List<ReportView> =
+        client().from(Tables.REPORT_VIEWS).select {
+            filter { eq("report_id", reportId) }
+            order("first_seen_at", Order.ASCENDING)
+        }.decodeList()
+
+    /** Which of these reports at least one staff member or admin has opened. */
+    suspend fun seenReportIds(reportIds: List<String>): Set<String> =
+        reportIds.chunked(100).flatMap { chunk ->
+            client().from(Tables.REPORT_VIEWS).select(Columns.list("report_id")) {
+                filter { isIn("report_id", chunk) }
+            }.decodeList<SeenRow>().map { it.reportId }
+        }.toSet()
+
+    @Serializable
+    private data class SeenRow(@SerialName("report_id") val reportId: String)
+
     suspend fun photoUrls(paths: List<String>): Map<String, String> {
         if (paths.isEmpty()) return emptyMap()
         return client().storage.from(Buckets.REPORT_PHOTOS)

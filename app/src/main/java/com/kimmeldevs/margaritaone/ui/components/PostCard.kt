@@ -118,6 +118,21 @@ fun PostCard(
                 }
             }
 
+            post.authorName?.let { author ->
+                AuthorLine(
+                    text = t("Posted by %s", author),
+                    role = post.authorRole,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+            post.editedByName?.let { editor ->
+                Text(
+                    text = t("Edited by %s", editor) + (post.editedAt?.let { " · " + Dates.dateTime(it) } ?: ""),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+
             Text(
                 text = post.title,
                 style = MaterialTheme.typography.bodyLarge,

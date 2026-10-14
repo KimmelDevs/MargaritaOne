@@ -11,6 +11,7 @@ object Tables {
     const val POST_COMMENTS = "post_comments"
     const val BARANGAYS = "barangays"
     const val AUDIT_LOG = "audit_log"
+    const val REPORT_VIEWS = "report_views"
 }
 
 object Buckets {

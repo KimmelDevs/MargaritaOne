@@ -9,6 +9,7 @@ import com.kimmeldevs.margaritaone.data.model.Profile
 import com.kimmeldevs.margaritaone.data.model.ReportDto
 import com.kimmeldevs.margaritaone.data.model.ReportStatus
 import com.kimmeldevs.margaritaone.data.model.ReportUpdateDto
+import com.kimmeldevs.margaritaone.data.model.ReportView
 import com.kimmeldevs.margaritaone.data.remote.Tables
 import com.kimmeldevs.margaritaone.data.repository.DirectoryRepository
 import com.kimmeldevs.margaritaone.data.repository.ProfileRepository
@@ -35,7 +36,9 @@ data class ReportDetail(
     /** Only loaded for staff (citizens can't read other profiles anyway). */
     val reporter: Profile?,
     val assignee: Profile?,
-    val barangayName: String? = null
+    val barangayName: String? = null,
+    /** Staff and admins who opened this report. Only loaded for staff/admins. */
+    val seenBy: List<ReportView> = emptyList()
 )
 
 data class ActionState(
@@ -56,8 +59,14 @@ class ReportDetailViewModel(
 
     private val reportId: String = checkNotNull(savedStateHandle[Screen.ReportDetail.ARG_REPORT_ID])
 
+    /** Marked once per visit; re-marking on every refresh would loop with the realtime listener. */
+    private var markedSeen = false
+
     val detail = Loadable(viewModelScope, localStore.offlineCache("report_$reportId")) {
         val report = reportRepository.getReport(reportId) ?: error("Report not found")
+        if (isStaff && !markedSeen) {
+            markedSeen = runCatching { reportRepository.markSeen(reportId) }.isSuccess
+        }
         // Opening the report clears its "Updated" dot in My reports.
         localStore.markReportSeen(report.id, report.updatedAt)
         ReportDetail(
@@ -68,7 +77,8 @@ class ReportDetailViewModel(
             assignee = if (isStaff) report.assignedTo?.let { profileRepository.getProfile(it) } else null,
             barangayName = report.barangayId?.let { id ->
                 runCatching { directoryRepository.getBarangays() }.getOrNull()?.firstOrNull { it.id == id }?.name
-            }
+            },
+            seenBy = if (isStaff) runCatching { reportRepository.getViews(reportId) }.getOrDefault(emptyList()) else emptyList()
         )
     }
 
@@ -79,7 +89,8 @@ class ReportDetailViewModel(
         detail.refresh()
         merge(
             realtimeRepository.tableChanges(Tables.REPORTS),
-            realtimeRepository.tableChanges(Tables.REPORT_UPDATES)
+            realtimeRepository.tableChanges(Tables.REPORT_UPDATES),
+            realtimeRepository.tableChanges(Tables.REPORT_VIEWS)
         )
             .onEach { detail.refresh(showIndicator = false) }
             .catch { /* best-effort */ }

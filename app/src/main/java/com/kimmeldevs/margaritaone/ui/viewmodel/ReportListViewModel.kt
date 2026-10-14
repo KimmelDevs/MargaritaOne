@@ -56,7 +56,9 @@ data class ReportListData(
     val reports: List<ReportDto>,
     /** photo_path -> signed URL, for card thumbnails. */
     val thumbnails: Map<String, String>,
-    val barangays: List<Barangay> = emptyList()
+    val barangays: List<Barangay> = emptyList(),
+    /** Reports a staff member or admin has opened. Staff dashboard only. */
+    val seenIds: Set<String> = emptySet()
 ) {
     val barangayNames: Map<String, String> get() = barangays.associate { it.id to it.name }
 }
@@ -88,7 +90,12 @@ class ReportListViewModel(
         val thumbs = runCatching { reportRepository.photoUrls(list.mapNotNull { it.photoPath }) }
             .getOrDefault(emptyMap())
         val barangays = runCatching { directoryRepository.getBarangays() }.getOrDefault(emptyList())
-        ReportListData(list, thumbs, barangays)
+        val seen = if (allReports) {
+            runCatching { reportRepository.seenReportIds(list.map { it.id }) }.getOrDefault(emptySet())
+        } else {
+            emptySet()
+        }
+        ReportListData(list, thumbs, barangays, seen)
     }
 
     /** List or map (#8). Kept here so filters and search carry over when switching. */

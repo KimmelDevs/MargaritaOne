@@ -168,11 +168,14 @@ private fun CommentRow(comment: PostComment, isMine: Boolean, canDelete: Boolean
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            Text(
-                if (isMine) t("%s (you)", name) else name,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    if (isMine) t("%s (you)", name) else name,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                RoleBadge(comment.authorRole)
+            }
             Text(comment.body, style = MaterialTheme.typography.bodyMedium)
             Text(
                 Dates.dateTime(comment.createdAt),

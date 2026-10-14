@@ -72,7 +72,21 @@ data class ReportUpdateDto(
     @SerialName("author_id") val authorId: String? = null,
     val status: ReportStatus? = null,
     val note: String? = null,
-    @SerialName("created_at") val createdAt: String
+    @SerialName("created_at") val createdAt: String,
+    /** Who made the update, copied by a database trigger so residents can see it too. */
+    @SerialName("author_name") val authorName: String? = null,
+    @SerialName("author_role") val authorRole: UserRole? = null
+)
+
+/** A row of `report_views`: a staff member or admin who opened the report ("Seen by"; staff/admins only). */
+@Serializable
+data class ReportView(
+    @SerialName("report_id") val reportId: String,
+    @SerialName("viewer_id") val viewerId: String,
+    @SerialName("viewer_name") val viewerName: String,
+    @SerialName("viewer_role") val viewerRole: UserRole,
+    @SerialName("first_seen_at") val firstSeenAt: String,
+    @SerialName("last_seen_at") val lastSeenAt: String
 )
 
 @Serializable
