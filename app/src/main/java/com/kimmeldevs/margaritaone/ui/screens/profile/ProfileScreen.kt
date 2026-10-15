@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.Button
@@ -59,6 +60,7 @@ fun ProfileScreen(
     onOpenReactedPosts: () -> Unit,
     onOpenBarangays: () -> Unit,
     onOpenActivityLog: () -> Unit,
+    onOpenAbout: () -> Unit,
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
@@ -135,6 +137,10 @@ fun ProfileScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
+            OutlinedButton(onClick = onOpenAbout, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Outlined.Info, contentDescription = null)
+                Text(t(if (profile.role == UserRole.ADMIN) "About Santa Margarita & officials" else "About Santa Margarita"), modifier = Modifier.padding(start = 8.dp))
+            }
             OutlinedButton(onClick = onOpenReactedPosts, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Outlined.ThumbUp, contentDescription = null)
                 Text(t("Posts I reacted to"), modifier = Modifier.padding(start = 8.dp))

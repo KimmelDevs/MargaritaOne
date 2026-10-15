@@ -25,10 +25,11 @@ import com.kimmeldevs.margaritaone.i18n.t
 fun RoleBadge(role: UserRole?, modifier: Modifier = Modifier) {
     val isAdmin = role == UserRole.ADMIN
     if (role == null || !role.isStaff) return
+    val tint = if (isAdmin) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
     Surface(
         shape = RoundedCornerShape(50),
-        color = if (isAdmin) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-        contentColor = if (isAdmin) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary,
+        color = tint.copy(alpha = 0.13f),
+        contentColor = tint,
         modifier = modifier
     ) {
         Row(

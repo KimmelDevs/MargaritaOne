@@ -78,6 +78,9 @@ class ReportListViewModel(
     private val currentUserId: String
 ) : ViewModel() {
 
+    /** Staff dashboard (every report) rather than a resident's own list. */
+    val isStaffList: Boolean get() = allReports
+
     /** Reports written offline that haven't been sent yet (#10). Only meaningful on My reports. */
     val pending: StateFlow<List<PendingReport>> = outbox.pending
 

@@ -41,6 +41,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.kimmeldevs.margaritaone.ui.components.GradientButton
 import com.kimmeldevs.margaritaone.ui.viewmodel.AuthFormState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -145,17 +146,11 @@ fun SignUpScreen(
                 }
             }
 
-            Button(
+            GradientButton(
+                text = t("Sign up"),
                 onClick = { onSignUp(fullName, email, password, confirmPassword, acceptedPrivacy) },
-                enabled = !state.isLoading,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
-                } else {
-                    Text(t("Sign up"))
-                }
-            }
+                loading = state.isLoading
+            )
         }
     }
 }

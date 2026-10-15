@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.kimmeldevs.margaritaone.data.model.UserRole
@@ -17,6 +18,7 @@ sealed class Screen(val route: String) {
     data object ForgotPassword : Screen("forgot_password")
 
     // Signed in
+    data object Home : Screen("home")
     data object Bulletin : Screen("bulletin")
     data object MyReports : Screen("my_reports")
     data object Dashboard : Screen("dashboard")
@@ -35,6 +37,7 @@ sealed class Screen(val route: String) {
     // Both
     data object PrivacyNotice : Screen("privacy_notice")
     data object Hotlines : Screen("hotlines")
+    data object About : Screen("about")
 
     data object ReportDetail : Screen("report_detail/{reportId}") {
         const val ARG_REPORT_ID = "reportId"
@@ -44,6 +47,7 @@ sealed class Screen(val route: String) {
 
 /** Bottom navigation tabs. Which ones a user sees depends on their role. */
 enum class Tab(val screen: Screen, val label: String, val icon: ImageVector) {
+    HOME(Screen.Home, "Home", Icons.Filled.Home),
     BULLETIN(Screen.Bulletin, "Bulletin", Icons.Filled.Campaign),
     MY_REPORTS(Screen.MyReports, "My reports", Icons.Filled.Assignment),
     DASHBOARD(Screen.Dashboard, "Reports", Icons.Filled.Dashboard),
@@ -53,9 +57,10 @@ enum class Tab(val screen: Screen, val label: String, val icon: ImageVector) {
 
     companion object {
         fun forRole(role: UserRole): List<Tab> = when (role) {
-            UserRole.CITIZEN -> listOf(BULLETIN, MY_REPORTS, HOTLINES, PROFILE)
-            UserRole.STAFF -> listOf(DASHBOARD, BULLETIN, HOTLINES, PROFILE)
-            UserRole.ADMIN -> listOf(DASHBOARD, BULLETIN, HOTLINES, USERS, PROFILE)
+            UserRole.CITIZEN -> listOf(HOME, BULLETIN, MY_REPORTS, HOTLINES, PROFILE)
+            UserRole.STAFF -> listOf(HOME, DASHBOARD, BULLETIN, HOTLINES, PROFILE)
+            // Five tabs at most; admins reach Hotlines from a Home tile.
+            UserRole.ADMIN -> listOf(HOME, DASHBOARD, BULLETIN, USERS, PROFILE)
         }
     }
 }

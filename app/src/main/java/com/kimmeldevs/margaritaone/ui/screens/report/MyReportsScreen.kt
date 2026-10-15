@@ -1,5 +1,11 @@
 package com.kimmeldevs.margaritaone.ui.screens.report
 
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.Map
+import com.kimmeldevs.margaritaone.ui.components.GradientFab
+import com.kimmeldevs.margaritaone.ui.components.RoundIconButton
+import com.kimmeldevs.margaritaone.ui.components.ScreenHeader
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -56,22 +62,23 @@ fun MyReportsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            SearchTopBar(
+            ScreenHeader(
+                eyebrow = "Santa Margarita",
                 title = "My reports",
                 query = filters.query,
                 onQueryChange = { q -> viewModel.updateFilters { it.copy(query = q) } },
                 searchPlaceholder = "Search title, place, or reference no."
             ) {
-                MapToggleButton(showMap, viewModel::toggleMap)
-                FilterButton(filters) { showFilters = true }
+                RoundIconButton(
+                    if (showMap) Icons.AutoMirrored.Filled.List else Icons.Outlined.Map,
+                    t(if (showMap) "Show as list" else "Show on map"),
+                    onClick = viewModel::toggleMap
+                )
+                RoundIconButton(Icons.Filled.Tune, t("Filters"), badge = filters.activeCount()) { showFilters = true }
             }
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onNewReportClick,
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text(t("Report a problem")) }
-            )
+            GradientFab(text = t("Report a problem"), icon = Icons.Filled.Add, onClick = onNewReportClick)
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
@@ -98,25 +105,10 @@ fun MyReportsScreen(
                         onReportClick = onReportClick,
                         emptyText = "No reports match these filters."
                     ) { all ->
-                        // Status counts that double as the status filter. Only shown when there's a mix.
-                        val counts = all.groupingBy { it.status }.eachCount()
-                        if (counts.size > 1) {
-                            item(key = "statusCounts") {
-                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    items(ReportStatus.entries.filter { (counts[it] ?: 0) > 0 }) { status ->
-                                        StatusCountChip(
-                                            count = counts[status] ?: 0,
-                                            status = status,
-                                            selected = filters.status == status,
-                                            onClick = {
-                                                viewModel.updateFilters {
-                                                    it.copy(status = if (it.status == status) null else status)
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-                            }
+                        item(key = "statusPills") {
+                            StatusFilterPills(all = all, selected = filters.status, onSelect = { status ->
+                                viewModel.updateFilters { it.copy(status = status) }
+                            })
                         }
                     }
                 }

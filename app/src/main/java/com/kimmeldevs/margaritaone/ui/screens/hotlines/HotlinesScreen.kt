@@ -1,5 +1,14 @@
 package com.kimmeldevs.margaritaone.ui.screens.hotlines
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import com.kimmeldevs.margaritaone.ui.components.IconBadge
+import com.kimmeldevs.margaritaone.ui.theme.PrimaryRed
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -136,6 +145,9 @@ fun HotlinesScreen(
             if (canEdit) {
                 ExtendedFloatingActionButton(
                     onClick = { editing = EditTarget(null) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = CircleShape,
                     icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                     text = { Text(t("Add hotline")) }
                 )
@@ -263,45 +275,62 @@ private fun HotlineCard(
     onDelete: () -> Unit
 ) {
     val urgent = category?.isUrgent == true
+    val onCard = if (urgent) Color.White else MaterialTheme.colorScheme.onSurface
+    val subtle = if (urgent) Color.White.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
     Card(
         onClick = onToggle,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (urgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant
-        ),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = if (urgent) Color.Transparent else MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (urgent) 3.dp else 1.dp),
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize()
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(
+            modifier = Modifier
+                .then(if (urgent) Modifier.background(Brush.linearGradient(listOf(PrimaryRed, Color(0xFFC8102E)))) else Modifier)
+                .padding(14.dp)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    HotlineIcon.fromKey(category?.icon).vector(),
-                    contentDescription = null,
-                    tint = if (urgent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
-                )
+                if (urgent) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.2f))
+                    ) {
+                        Icon(HotlineIcon.fromKey(category?.icon).vector(), contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+                    }
+                } else {
+                    IconBadge(HotlineIcon.fromKey(category?.icon).vector(), tint = MaterialTheme.colorScheme.primary)
+                }
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .padding(horizontal = 12.dp)
                 ) {
-                    Text(contact.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text(contact.name, style = MaterialTheme.typography.titleSmall, color = onCard)
                     Text(
                         contact.phone,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
+                        style = if (urgent) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge,
+                        color = if (urgent) Color.White else MaterialTheme.colorScheme.tertiary
                     )
-                    contact.note?.let {
-                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    contact.note?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = subtle) }
                 }
-                Icon(
-                    if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = t(if (expanded) "Hide options" else "Show options"),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(if (urgent) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.secondaryContainer)
+                ) {
+                    Icon(
+                        if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = t(if (expanded) "Hide options" else "Show options"),
+                        tint = if (urgent) Color.White else MaterialTheme.colorScheme.secondary
+                    )
+                }
             }
 
             AnimatedVisibility(visible = expanded) {
@@ -313,7 +342,7 @@ private fun HotlineCard(
                         Button(
                             onClick = onCall,
                             colors = if (urgent) {
-                                ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = PrimaryRed)
                             } else {
                                 ButtonDefaults.buttonColors()
                             },
@@ -322,7 +351,12 @@ private fun HotlineCard(
                             Icon(Icons.Filled.Call, contentDescription = null, modifier = Modifier.size(18.dp))
                             Text(t("Call"), modifier = Modifier.padding(start = 6.dp))
                         }
-                        OutlinedButton(onClick = onCopy, modifier = Modifier.weight(1f)) {
+                        OutlinedButton(
+                            onClick = onCopy,
+                            colors = if (urgent) ButtonDefaults.outlinedButtonColors(contentColor = Color.White) else ButtonDefaults.outlinedButtonColors(),
+                            border = if (urgent) BorderStroke(1.dp, Color.White) else ButtonDefaults.outlinedButtonBorder(),
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
                             Text(t("Copy number"), modifier = Modifier.padding(start = 6.dp))
                         }

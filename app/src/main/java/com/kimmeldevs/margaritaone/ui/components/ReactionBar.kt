@@ -101,19 +101,18 @@ fun ReactionBar(
                 }
             }
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ReactButton(mine = summary.mine, onReact = onReact, modifier = Modifier.weight(1f))
             ActionButton(onClick = onComment, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(20.dp))
-                Text(t("Comment"), modifier = Modifier.padding(start = 6.dp), fontWeight = FontWeight.Medium)
+                Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                ActionLabel(t("Comment"))
             }
             ActionButton(
                 onClick = onShare,
                 modifier = Modifier.weight(1f)
             ) {
-                Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(20.dp))
-                Text(t("Share"), modifier = Modifier.padding(start = 6.dp), fontWeight = FontWeight.Medium)
+                Icon(Icons.Outlined.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                ActionLabel(t("Share"))
             }
         }
     }
@@ -177,7 +176,8 @@ private fun ReactButton(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
                 .combinedClickable(
                     // Tap: like, or remove whatever reaction you have.
                     onClick = { onReact(mine ?: ReactionType.LIKE) },
@@ -189,16 +189,11 @@ private fun ReactButton(
                 .padding(vertical = 10.dp)
         ) {
             if (mine == null) {
-                Icon(Icons.Outlined.ThumbUp, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+                Icon(Icons.Outlined.ThumbUp, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
             } else {
-                Text(mine.emoji, fontSize = 18.sp)
+                Text(mine.emoji, fontSize = 16.sp)
             }
-            Text(
-                t(mine?.label ?: "Like"),
-                color = color,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(start = 6.dp)
-            )
+            ActionLabel(t(mine?.label ?: "Like"), color = color)
         }
 
         if (pickerOpen) {
@@ -264,7 +259,8 @@ private fun ActionButton(onClick: () -> Unit, modifier: Modifier = Modifier, con
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .clickable(onClick = onClick)
             .padding(vertical = 10.dp)
     ) {
@@ -315,3 +311,19 @@ private fun ReactionBreakdownSheet(summary: ReactionSummary, onDismiss: () -> Un
         }
     }
 }
+
+/** Button label that always stays on one line (shrinks a little instead of wrapping "Comme / nt"). */
+@Composable
+private fun ActionLabel(text: String, color: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified) {
+    Text(
+        text,
+        color = color,
+        style = MaterialTheme.typography.labelLarge,
+        maxLines = 1,
+        softWrap = false,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Visible,
+        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 14.sp),
+        modifier = Modifier.padding(start = 5.dp)
+    )
+}
+

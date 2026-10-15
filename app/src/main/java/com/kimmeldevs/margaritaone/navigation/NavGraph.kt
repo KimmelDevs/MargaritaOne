@@ -1,5 +1,30 @@
 package com.kimmeldevs.margaritaone.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PostAdd
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.kimmeldevs.margaritaone.ui.screens.home.HomeScreen
+import com.kimmeldevs.margaritaone.ui.screens.home.HomeTile
+import com.kimmeldevs.margaritaone.ui.theme.DeepNavy
+import com.kimmeldevs.margaritaone.ui.theme.PrimaryBlue
+import com.kimmeldevs.margaritaone.ui.theme.PrimaryRed
 import com.kimmeldevs.margaritaone.i18n.t
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -39,6 +64,7 @@ import com.kimmeldevs.margaritaone.ui.components.OfflineBanner
 import com.kimmeldevs.margaritaone.ui.viewmodel.EmergencyViewModel
 import com.kimmeldevs.margaritaone.util.isOnlineFlow
 import com.kimmeldevs.margaritaone.ui.components.MessageBox
+import com.kimmeldevs.margaritaone.ui.screens.about.AboutScreen
 import com.kimmeldevs.margaritaone.ui.screens.admin.ActivityLogScreen
 import com.kimmeldevs.margaritaone.ui.screens.admin.BarangaysScreen
 import com.kimmeldevs.margaritaone.ui.screens.auth.ForgotPasswordScreen
@@ -113,7 +139,8 @@ private fun SignedOutNavGraph() {
                     authViewModel.clearMessages()
                     navController.navigate(Screen.ForgotPassword.route)
                 },
-                onOpenHotlines = { navController.navigate(Screen.Hotlines.route) }
+                onOpenHotlines = { navController.navigate(Screen.Hotlines.route) },
+                onOpenAbout = { navController.navigate(Screen.About.route) }
             )
         }
         composable(Screen.ForgotPassword.route) {
@@ -121,6 +148,9 @@ private fun SignedOutNavGraph() {
         }
         composable(Screen.Hotlines.route) {
             HotlinesScreen(canEdit = false, onBackClick = { navController.popBackStack() })
+        }
+        composable(Screen.About.route) {
+            AboutScreen(canEdit = false, onBackClick = { navController.popBackStack() })
         }
         composable(Screen.SignUp.route) {
             // Signed up, but the email needs confirming: back to login with the email filled in and the message shown.
@@ -190,13 +220,21 @@ private fun SignedInNavGraph(
                 )
                 OfflineBanner(visible = !isOnline)
                 if (showBottomBar) {
-                    NavigationBar {
+                    NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
                         tabs.forEach { tab ->
+                            val selected = currentRoute == tab.screen.route
                             NavigationBarItem(
-                                selected = currentRoute == tab.screen.route,
+                                selected = selected,
                                 onClick = { navController.navigateToTab(tab.screen.route) },
                                 icon = { Icon(tab.icon, contentDescription = null) },
-                                label = { Text(t(tab.label)) }
+                                label = { Text(t(tab.label)) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
                         }
                     }
@@ -213,6 +251,34 @@ private fun SignedInNavGraph(
                 .consumeWindowInsets(outerPadding)
         ) {
             val openReport: (String) -> Unit = { id -> navController.navigate(Screen.ReportDetail.createRoute(id)) }
+            // A screen that is a tab for this role is switched to; otherwise it opens on top with a back arrow.
+            val open: (Screen) -> Unit = { screen ->
+                if (tabs.any { it.screen == screen }) navController.navigateToTab(screen.route) else navController.navigate(screen.route)
+            }
+
+            composable(Screen.Home.route) {
+                // Six shortcuts per role, all to features the app really has.
+                val reportProblem = HomeTile("Report a problem", Icons.Filled.AddCircle, PrimaryRed) { navController.navigate(Screen.CreateReport.route) }
+                val announcements = HomeTile("Announcements", Icons.Filled.Campaign, DeepNavy) { open(Screen.Bulletin) }
+                val hotlines = HomeTile("Hotlines", Icons.Filled.Call, PrimaryRed) { open(Screen.Hotlines) }
+                val about = HomeTile("About Sta. Margarita", Icons.Filled.Info, PrimaryBlue) { open(Screen.About) }
+                val profileTile = HomeTile("Profile", Icons.Filled.Person, DeepNavy) { open(Screen.Profile) }
+                val reports = HomeTile("Reports", Icons.Filled.Dashboard, PrimaryBlue) { open(Screen.Dashboard) }
+                val tiles = when {
+                    isAdmin -> listOf(
+                        reports, announcements, hotlines, about,
+                        HomeTile("Users", Icons.Filled.Group, DeepNavy) { open(Screen.Users) },
+                        HomeTile("New post", Icons.Filled.PostAdd, PrimaryRed) { navController.navigate(Screen.CreatePost.createRoute()) }
+                    )
+                    isStaff -> listOf(reports, reportProblem, announcements, hotlines, about, profileTile)
+                    else -> listOf(
+                        reportProblem,
+                        HomeTile("My reports", Icons.Filled.Assignment, PrimaryBlue) { open(Screen.MyReports) },
+                        announcements, hotlines, about, profileTile
+                    )
+                }
+                HomeScreen(tiles = tiles, onOpenBulletin = { open(Screen.Bulletin) })
+            }
 
             composable(Screen.Bulletin.route) {
                 BulletinScreen(
@@ -237,14 +303,21 @@ private fun SignedInNavGraph(
                     onOpenReactedPosts = { navController.navigate(Screen.ReactedPosts.route) },
                     onOpenBarangays = { navController.navigate(Screen.Barangays.route) },
                     onOpenActivityLog = { navController.navigate(Screen.ActivityLog.route) },
+                    onOpenAbout = { navController.navigate(Screen.About.route) },
                     onSignOut = onSignOut
                 )
             }
             composable(Screen.PrivacyNotice.route) {
                 PrivacyNoticeScreen(onBackClick = { navController.popBackStack() })
             }
+            composable(Screen.About.route) {
+                AboutScreen(canEdit = isAdmin, onBackClick = { navController.popBackStack() })
+            }
             composable(Screen.Hotlines.route) {
-                HotlinesScreen(canEdit = isAdmin)
+                HotlinesScreen(
+                    canEdit = isAdmin,
+                    onBackClick = if (tabs.any { it.screen == Screen.Hotlines }) null else ({ navController.popBackStack() })
+                )
             }
             composable(Screen.ReactedPosts.route) {
                 BulletinScreen(

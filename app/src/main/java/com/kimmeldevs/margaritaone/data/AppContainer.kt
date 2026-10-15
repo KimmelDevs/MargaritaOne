@@ -7,6 +7,7 @@ import com.kimmeldevs.margaritaone.data.repository.AuthRepository
 import com.kimmeldevs.margaritaone.data.repository.DirectoryRepository
 import com.kimmeldevs.margaritaone.data.repository.EmergencyContactRepository
 import com.kimmeldevs.margaritaone.data.repository.PostRepository
+import com.kimmeldevs.margaritaone.data.repository.OfficialRepository
 import com.kimmeldevs.margaritaone.data.repository.ProfileRepository
 import com.kimmeldevs.margaritaone.data.repository.PushRepository
 import com.kimmeldevs.margaritaone.data.repository.RealtimeRepository
@@ -24,4 +25,5 @@ class AppContainer(context: Context) {
     val directoryRepository by lazy { DirectoryRepository({ SupabaseProvider.client }, localStore.offlineCache("barangays")) }
     val realtimeRepository by lazy { RealtimeRepository { SupabaseProvider.client } }
     val pushRepository by lazy { PushRepository { SupabaseProvider.client } }
+    val officialRepository by lazy { OfficialRepository { SupabaseProvider.client } }
 }

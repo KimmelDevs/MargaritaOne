@@ -1,5 +1,6 @@
 package com.kimmeldevs.margaritaone.ui.screens.report
 
+import com.kimmeldevs.margaritaone.ui.components.GroupHeader
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -112,14 +113,15 @@ fun ReportListContent(
         visible
             .groupBy { Dates.bucket(viewModel.groupKey(it, filters.sort)) }
             .forEach { (bucket, reports) ->
-                item(key = "header_${bucket.name}") { ListSectionHeader(bucket.label()) }
+                item(key = "header_${bucket.name}") { GroupHeader(bucket.label(), reports.size) }
                 items(reports, key = { it.id }) { report ->
                     ReportCard(
                         report = report,
                         onClick = { onReportClick(report.id) },
                         thumbnailUrl = report.photoPath?.let { data.thumbnails[it] },
                         isUpdated = viewModel.isUpdated(report),
-                        isSeen = report.id in data.seenIds
+                        isSeen = report.id in data.seenIds,
+                        staffView = viewModel.isStaffList
                     )
                 }
             }

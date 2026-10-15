@@ -1,5 +1,23 @@
 package com.kimmeldevs.margaritaone.ui.screens.staff
 
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
+import com.kimmeldevs.margaritaone.data.model.ReportDto
+import com.kimmeldevs.margaritaone.ui.components.RoundIconButton
+import com.kimmeldevs.margaritaone.ui.components.ScreenHeader
+import com.kimmeldevs.margaritaone.ui.screens.report.StatusFilterPills
+import com.kimmeldevs.margaritaone.ui.screens.report.activeCount
+import com.kimmeldevs.margaritaone.ui.theme.DeepNavy
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -99,18 +117,21 @@ fun DashboardScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            SearchTopBar(
-                title = "LGU dashboard",
+            ScreenHeader(
+                eyebrow = "LGU dashboard",
+                title = "Reports",
                 query = filters.query,
                 onQueryChange = { q -> viewModel.updateFilters { it.copy(query = q) } },
                 searchPlaceholder = "Search title, place, or reference no."
             ) {
-                MapToggleButton(showMap, viewModel::toggleMap)
-                FilterButton(filters) { showFilters = true }
+                RoundIconButton(
+                    if (showMap) Icons.AutoMirrored.Filled.List else Icons.Outlined.Map,
+                    t(if (showMap) "Show as list" else "Show on map"),
+                    onClick = viewModel::toggleMap
+                )
+                RoundIconButton(Icons.Filled.Tune, t("Filters"), badge = filters.activeCount()) { showFilters = true }
                 Box {
-                    IconButton(onClick = { menuOpen = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = t("More options"))
-                    }
+                    RoundIconButton(Icons.Filled.MoreVert, t("More options")) { menuOpen = true }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(
                             text = { Text(t("Export to CSV (Excel)")) },
@@ -142,21 +163,11 @@ fun DashboardScreen(
                 onReportClick = onReportClick,
                 emptyText = "No reports here."
             ) { all ->
-                item(key = "stats") {
-                    val counts = all.groupingBy { it.status }.eachCount()
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        listOf(ReportStatus.PENDING, ReportStatus.IN_PROGRESS, ReportStatus.RESOLVED).forEach { status ->
-                            StatTile(
-                                label = status.label,
-                                value = counts[status] ?: 0,
-                                selected = filters.status == status,
-                                onClick = {
-                                    viewModel.updateFilters { it.copy(status = if (it.status == status) null else status) }
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
+                item(key = "attention") { NeedsAttentionCard(all) }
+                item(key = "statusPills") {
+                    StatusFilterPills(all = all, selected = filters.status, onSelect = { status ->
+                        viewModel.updateFilters { it.copy(status = status) }
+                    })
                 }
             }
         }
@@ -173,39 +184,73 @@ fun DashboardScreen(
     }
 }
 
-/** Count tile that toggles the status filter; outlined when selected. */
+/** Navy card: how many reports still need work, with a pending / in progress / resolved bar. */
 @Composable
-private fun StatTile(
-    label: String,
-    value: Int,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.semantics {
-            this.selected = selected
-            role = Role.Tab
-        },
-        border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
-            contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
-        )
+private fun NeedsAttentionCard(all: List<ReportDto>) {
+    val pending = all.count { it.status == ReportStatus.PENDING }
+    val inProgress = all.count { it.status == ReportStatus.IN_PROGRESS }
+    val resolved = all.count { it.status == ReportStatus.RESOLVED }
+    val total = (pending + inProgress + resolved).coerceAtLeast(1)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.large)
+            .background(Brush.linearGradient(listOf(DeepNavy, Color(0xFF0B4A93))))
+            .padding(18.dp)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+        Text(t("Needs attention"), color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelLarge)
+        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text((pending + inProgress).toString(), color = Color.White, fontSize = 44.sp, fontWeight = FontWeight.Bold, lineHeight = 44.sp)
             Text(
-                text = value.toString(),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = t(label),
-                style = MaterialTheme.typography.labelMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                t("active reports"),
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 6.dp)
             )
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.fillMaxWidth()) {
+            listOf(pending to SoftRed, inProgress to SoftBlue, resolved to Color.White.copy(alpha = 0.35f)).forEach { (count, color) ->
+                if (count > 0) {
+                    Box(
+                        modifier = Modifier
+                            .weight(count.toFloat() / total)
+                            .height(6.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                    )
+                }
+            }
+            if (pending + inProgress + resolved == 0) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(6.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.2f))
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            LegendDot(SoftRed, t("%d Pending", pending))
+            LegendDot(SoftBlue, t("%d In progress", inProgress))
+            LegendDot(Color.White.copy(alpha = 0.5f), t("%d Resolved", resolved))
+        }
+    }
+}
+
+private val SoftRed = Color(0xFFFF5C74)
+private val SoftBlue = Color(0xFF7DB4F5)
+
+@Composable
+private fun LegendDot(color: Color, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Text(text, color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
     }
 }

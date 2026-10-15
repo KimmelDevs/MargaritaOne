@@ -61,7 +61,7 @@ Steps 1–7 are implemented in code (push needs the Firebase setup in `supabase/
 (needs `JAVA_HOME` = Android Studio's `jbr`; compileSdk 37, Kotlin 2.4.21, supabase-kt 3.8.0). Not yet tested against a
 live Supabase project.
 
-- SQL: `supabase/migrations/0001_init.sql`, `0002_profile_email_and_hardening.sql`, `0003_cancel_and_reference_numbers.sql`, `0004_emergency_contacts.sql`, `0005_post_images_and_reactions.sql`, `0006_hotline_categories.sql`, `0007_comments_events_barangays_audit.sql`, `0008_accountability.sql`, `0009_push_notifications.sql`; checks in `supabase/tests/rls_checks.sql`;
+- SQL: `supabase/migrations/0001_init.sql`, `0002_profile_email_and_hardening.sql`, `0003_cancel_and_reference_numbers.sql`, `0004_emergency_contacts.sql`, `0005_post_images_and_reactions.sql`, `0006_hotline_categories.sql`, `0007_comments_events_barangays_audit.sql`, `0008_accountability.sql`, `0009_push_notifications.sql`, `0010_officials.sql`; checks in `supabase/tests/rls_checks.sql`;
   setup + security model in `supabase/README.md`. Add new SQL as new numbered migration files, never edit applied ones.
 - Status changes go through `report_updates` (trigger copies status onto `reports`). Roles change only via the admin-only
   `set_user_role()` RPC. Reports are rate-limited to 10/hour per user.
@@ -71,9 +71,16 @@ live Supabase project.
   loading/error/pull-to-refresh. `SessionViewModel` drives `navigation/NavGraph.kt` (`MargaritaOneRoot`): signed-out graph
   (login, sign-up, privacy) vs signed-in graph with role-based bottom tabs (`Tab.forRole`).
 - Photos: `util/ImageCompressor` (resize + strip EXIF). GPS: `util/LocationHelper` (fused location, asked on tap).
-- Privacy notice text in `ui/screens/privacy/PrivacyNoticeScreen.kt` still has a DPO contact placeholder.
-- Branding: crab mascot at `res/drawable-nodpi/mascot.png` (launcher icon + login `BrandBanner`); red / blue /
-  white palette from the municipal FRP banner in `ui/theme/Color.kt` (`BrandRed`, `BrandBlue`, `BrandSlate`).
+- Privacy notice (`ui/screens/privacy/PrivacyNoticeScreen.kt`): contact is the Office of the Municipal Mayor until the
+  LGU names a Data Protection Officer (none publicly listed).
+- Branding (design kit, Oct 2026): palette in `ui/theme/Color.kt` (Primary Red #E31837 actions/alerts, Primary Blue
+  #0866C6 links/nav, Deep Navy #0D3157 headings, Cool White #F4F7FB background, white cards) with `BrandGradient`
+  (red→blue) for primary buttons. Shared pieces in `ui/components/Brand.kt`: `MargaritaOneLogo`/`Wordmark` (M logo
+  `logo_m.png` + "Margarita" navy / "One" red), `GradientButton`, `IconBadge`, `BrandWaves`, `SectionHeader`.
+  Launcher icon = M logo; crab `mascot.png` is the login illustration (`login_hero.jpg`) and notification large icon.
+  Home tab (`ui/screens/home/`): greeting carousel (`hero_town.jpg`, `hero_welcome.jpg`), six role-based shortcut tiles
+  (only features that exist), latest bulletin posts. Tabs: citizen Home/Bulletin/My reports/Hotlines/Profile; staff
+  Home/Reports/Bulletin/Hotlines/Profile; admin Home/Reports/Bulletin/Users/Profile (Hotlines via a Home tile).
   Dynamic colour is off on purpose. Map opens at `TOWN_CENTER` (Santa Margarita poblacion) in `ui/components/TownMap.kt`.
 - UI text is English wrapped in `t("...")` (`i18n/I18n.kt`); the English text is the key into
   `i18n/FilipinoStrings.kt` and `i18n/WarayStrings.kt` (missing keys fall back to English). When adding UI text,
@@ -119,3 +126,7 @@ live Supabase project.
   App: `push/` (`Push.init` from `MargaritaOneApp`, FirebaseApp built from `FIREBASE_*` in local.properties, no
   google-services plugin; `PushService` shows notifications; `PushTarget` opens the report/bulletin on tap).
   Register on sign-in and unregister before sign-out in `SessionViewModel`. Notification permission asked once.
+- About screen (`ui/screens/about/`, from Login and Profile): town history/facts and `officials` (0010; anyone reads,
+  admins edit in-app incl. photos uploaded to `post-attachments/officials/`). Seeded with the 2025–2028 officials from
+  public sources; the LGU should confirm. `supabase/seed/santa_margarita_barangays.sql` loads the 36 barangays — run
+  only once the database no longer serves MyGandara.

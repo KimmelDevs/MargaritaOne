@@ -1,5 +1,20 @@
 package com.kimmeldevs.margaritaone.ui.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import com.kimmeldevs.margaritaone.ui.theme.BrandGradient
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.provider.CalendarContract
@@ -55,22 +70,23 @@ fun PostCard(
     val isScheduled = publishMillis != null && publishMillis > System.currentTimeMillis()
     val isEmergency = post.type == PostType.EMERGENCY
     val isNew = Dates.isWithinHours(post.publishedAt, 24)
+    var menuOpen by remember { mutableStateOf(false) }
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isEmergency) {
-                MaterialTheme.colorScheme.errorContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            }
-        )
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        // Emergencies keep a red outline so they stand out in the feed.
+        border = if (isEmergency) BorderStroke(1.5.dp, MaterialTheme.colorScheme.error) else null
     ) {
-        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+        Column(modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp)) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (isNew && !isScheduled) {
+                    PillBadge(text = "New", containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+                }
                 if (isScheduled && publishMillis != null) {
                     PillBadge(
                         text = t("Scheduled · %s", Dates.formatMillis(publishMillis, "MMM d, h:mm a")),
@@ -78,101 +94,115 @@ fun PostCard(
                         contentColor = MaterialTheme.colorScheme.onTertiary
                     )
                 }
+                PillBadge(
+                    text = t(post.type.label).uppercase(),
+                    containerColor = if (isEmergency) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = if (isEmergency) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSecondaryContainer
+                )
                 if (post.pinned) PillBadge(text = "Pinned")
-                // "New" badge (#13)
-                if (isNew && !isScheduled) {
-                    PillBadge(
-                        text = "New",
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-                if (isEmergency) {
-                    PillBadge(
-                        text = post.type.label,
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    )
-                } else {
-                    PillBadge(
-                        text = post.type.label,
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
                 Text(
                     text = Dates.date(post.publishedAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
-                if (onEdit != null) {
-                    IconButton(onClick = onEdit) {
-                        Icon(Icons.Filled.Edit, contentDescription = t("Edit post"))
+                if (onEdit != null || onDelete != null) {
+                    Box {
+                        IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = t("More options"), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            onEdit?.let { edit ->
+                                DropdownMenuItem(
+                                    text = { Text(t("Edit post")) },
+                                    leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                                    onClick = { menuOpen = false; edit() }
+                                )
+                            }
+                            onDelete?.let { delete ->
+                                DropdownMenuItem(
+                                    text = { Text(t("Delete post"), color = MaterialTheme.colorScheme.error) },
+                                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                                    onClick = { menuOpen = false; delete() }
+                                )
+                            }
+                        }
                     }
                 }
-                if (onDelete != null) {
-                    IconButton(onClick = onDelete) {
-                        Icon(Icons.Filled.Delete, contentDescription = t("Delete post"))
+            }
+
+            Column(modifier = Modifier.padding(end = 8.dp)) {
+                // Who posted it (accountability).
+                post.authorName?.let { author ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.padding(top = 10.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(BrandGradient)
+                        ) {
+                            Text(author.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                        Text(author, style = MaterialTheme.typography.titleSmall)
+                        RoleBadge(post.authorRole)
                     }
                 }
-            }
-
-            post.authorName?.let { author ->
-                AuthorLine(
-                    text = t("Posted by %s", author),
-                    role = post.authorRole,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
-            post.editedByName?.let { editor ->
-                Text(
-                    text = t("Edited by %s", editor) + (post.editedAt?.let { " · " + Dates.dateTime(it) } ?: ""),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-
-            Text(
-                text = post.title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
-            )
-            if (post.body.isNotBlank()) {
-                Text(
-                    text = post.body,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            if (post.type == PostType.EVENT && post.eventStart != null) {
-                EventBox(post = post, modifier = Modifier.padding(top = 8.dp))
-            }
-
-            // Photos, Facebook-style; tap opens the swipeable viewer.
-            PostImageGrid(
-                urls = imageUrls,
-                onImageClick = onViewImage,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-
-            if (documentUrl != null) {
-                TextButton(onClick = { onOpenDocument(documentUrl) }) {
-                    Icon(Icons.Filled.Description, contentDescription = null)
-                    Text(t("View attachment"), modifier = Modifier.padding(start = 6.dp))
+                post.editedByName?.let { editor ->
+                    Text(
+                        text = t("Edited by %s", editor) + (post.editedAt?.let { " · " + Dates.dateTime(it) } ?: ""),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
                 }
-            }
 
-            ReactionBar(
-                summary = reactions,
-                commentCount = commentCount,
-                onReact = onReact,
-                onComment = onComment,
-                onShare = onShare,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+                Text(
+                    text = post.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(top = 10.dp, bottom = 2.dp)
+                )
+                if (post.body.isNotBlank()) {
+                    Text(
+                        text = post.body,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (post.type == PostType.EVENT && post.eventStart != null) {
+                    EventBox(post = post, modifier = Modifier.padding(top = 8.dp))
+                }
+
+                // Photos, Facebook-style; tap opens the swipeable viewer.
+                PostImageGrid(
+                    urls = imageUrls,
+                    onImageClick = onViewImage,
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .clip(MaterialTheme.shapes.large)
+                )
+
+                if (documentUrl != null) {
+                    TextButton(onClick = { onOpenDocument(documentUrl) }) {
+                        Icon(Icons.Filled.Description, contentDescription = null)
+                        Text(t("View attachment"), modifier = Modifier.padding(start = 6.dp))
+                    }
+                }
+
+                ReactionBar(
+                    summary = reactions,
+                    commentCount = commentCount,
+                    onReact = onReact,
+                    onComment = onComment,
+                    onShare = onShare,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
         }
     }
 }

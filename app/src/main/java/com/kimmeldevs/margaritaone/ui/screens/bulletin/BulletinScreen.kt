@@ -1,5 +1,9 @@
 package com.kimmeldevs.margaritaone.ui.screens.bulletin
 
+import androidx.compose.material.icons.filled.Edit
+import com.kimmeldevs.margaritaone.ui.components.FilterPill
+import com.kimmeldevs.margaritaone.ui.components.GradientFab
+import com.kimmeldevs.margaritaone.ui.components.ScreenHeader
 import com.kimmeldevs.margaritaone.i18n.AppLanguage
 import com.kimmeldevs.margaritaone.i18n.I18n
 import com.kimmeldevs.margaritaone.i18n.LocalLanguage
@@ -91,8 +95,9 @@ fun BulletinScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            SearchTopBar(
-                title = if (reactedOnly) "Posts I reacted to" else "Santa Margarita bulletin",
+            ScreenHeader(
+                eyebrow = "Santa Margarita",
+                title = if (reactedOnly) "Posts I reacted to" else "Bulletin",
                 query = query,
                 onQueryChange = viewModel::setQuery,
                 searchPlaceholder = "Search announcements",
@@ -102,11 +107,7 @@ fun BulletinScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             if (canPost && !reactedOnly) {
-                ExtendedFloatingActionButton(
-                    onClick = onNewPostClick,
-                    icon = { Icon(Icons.Filled.Campaign, contentDescription = null) },
-                    text = { Text(t("New post")) }
-                )
+                GradientFab(text = t("New post"), icon = Icons.Filled.Edit, onClick = onNewPostClick)
             }
         }
     ) { innerPadding ->
@@ -120,24 +121,16 @@ fun BulletinScreen(
             val visible = viewModel.visiblePosts(posts, filter, query)
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 88.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 96.dp)
             ) {
                 item {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         item {
-                            FilterChip(
-                                selected = filter == null,
-                                onClick = { viewModel.setFilter(null) },
-                                label = { Text(t("All")) }
-                            )
+                            FilterPill(label = t("All"), selected = filter == null, onClick = { viewModel.setFilter(null) })
                         }
                         items(PostType.entries) { type ->
-                            FilterChip(
-                                selected = filter == type,
-                                onClick = { viewModel.setFilter(type) },
-                                label = { Text(t(type.label)) }
-                            )
+                            FilterPill(label = t(type.label), selected = filter == type, onClick = { viewModel.setFilter(type) })
                         }
                     }
                 }

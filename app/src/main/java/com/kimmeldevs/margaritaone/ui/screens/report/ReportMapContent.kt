@@ -146,6 +146,8 @@ fun ReportMapContent(
                 onClick = { onReportClick(report.id) },
                 thumbnailUrl = report.photoPath?.let { data.thumbnails[it] },
                 isUpdated = viewModel.isUpdated(report),
+                isSeen = report.id in data.seenIds,
+                staffView = viewModel.isStaffList,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(start = 16.dp, end = 16.dp, bottom = 96.dp)

@@ -21,8 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-// TODO(LGU): have the municipal Data Protection Officer review this text and fill in the contact details.
-private const val DPO_CONTACT = "[Name of Data Protection Officer], Municipal Hall, Santa Margarita, Samar — [email / phone]"
+// TODO(LGU): once the LGU designates a Data Protection Officer, put their name, email and phone here and have them
+// review this notice. No DPO is publicly listed for Santa Margarita (checked Oct 2026), so requests go to the Mayor's office.
+private const val DPO_CONTACT = "Data Protection Officer, Office of the Municipal Mayor, Municipal Hall, Santa Margarita, Samar 6709"
 
 private val sections = listOf(
     "Who we are" to
